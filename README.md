@@ -36,9 +36,9 @@ have just defeated come and trash talk in a thread).
 ## **Post-Game Stats Scraping**
 ***
 *After each game, an official post-game thread is posted by the mods. These threads tend to lack the box-score/stats and
-score by quarter. To make up for this, the bot searches for the official post-game thread by submission  and automatically
-replies with the post-game stats formatted into pretty markdown tables. Details of the implementation can be found in the
-docstrings within the module itself. Below is an example of the formatted reply:*
+score by quarter. To make up for this, the bot keyword searches for the official post-game thread by submission title 
+and automatically replies with the post-game stats formatted into pretty markdown tables. Details of the implementation 
+can be found in the docstrings within the module itself. Below is an example of the formatted reply:*
 
 
 #Dallas Cowboys at New England Patriots
