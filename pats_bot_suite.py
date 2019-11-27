@@ -34,35 +34,35 @@ class PatsBotSuite(Thread):
         self._stop_event = threading.Event()
         self.nesn_reply_footer = "\n***\n^I ^am ^the ^FuckNESNBot, ^part ^of ^the ^r/patriots ^utility ^bot! ^Click " \
                                  "^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                                 "^my ^creator!"
+                                 "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.weei_reply_footer = "\n***\n^I ^am ^the ^WEEIBot, ^part ^of ^the ^r/patriots ^utility ^bot! ^Click " \
                                  "^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                                 "^my ^creator!"
+                                 "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.slater_footer = "\n***\n^I ^am ^the ^slater ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! ^Click " \
                              "^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                             "^my ^creator!"
+                             "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.ftj_footer = "\n***\n^I ^am ^the ^FTJs ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! ^Click " \
                           "^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                          "^my ^creator!"
+                          "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.refs_footer = "\n***\n^I ^am ^the ^fuck ^the ^refs ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! " \
                            "^Click ^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                           "^my ^creator!"
+                           "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.pp_footer = "\n***\n^I ^am ^the ^patspulpit ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! " \
                          "^Click ^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                         "^my ^creator!"
+                         "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.boohoo = "\n***\n^I ^am ^the ^boohoo ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! " \
                       "^Click ^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                      "^my ^creator!"
+                      "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         self.pw_footer = "\n***\n^I ^am ^the ^patriotswire ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! " \
                          "^Click ^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
-                         "^my ^creator!"
+                         "^my ^creator! | [Github](https://github.com/schwifty42069/pats_bot_suite)"
 
         print("\nAuthenticated as {}!\n".format(self.reddit.user.me()))
 
