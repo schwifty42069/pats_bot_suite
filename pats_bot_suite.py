@@ -92,7 +92,7 @@ class PatsBotSuite(Thread):
                     if "!slater" in comment.body.lower():
                         print("\nSaying Awwww yeahhhh!\n")
                         comment.reply("## Awwwwwwwww yeahhhhhhhhhhhh!\n{}\n".format(self.slater_footer))
-                    elif "jets" in comment.body.lower() and str(comment.author) != "PatsUtilityBot":
+                    elif "!jets" in comment.body.lower() and str(comment.author) != "PatsUtilityBot":
                         print("\nSaying fuck the jets!\n")
                         comment.reply("## Fuck the Jets!\n{}\n".format(self.ftj_footer))
                     elif "!refs" in comment.body.lower():
