@@ -258,7 +258,7 @@ class ArticleScraper(object):
         author = "{} on {}".format(author, article_time)
         for p in self.bsoup.findAll("p"):
             if "93.7" not in p.text and "Related:" not in p.text and "RADIO.COM Sports" not in p.text:
-                article += "{} ".format(p.text)
+                article += "{} \n".format(p.text)
         formatted_article = self.check_for_numbered_list(self.double_new_lines(article))
         self.content.update({"site": self.site, "title": title, "author": author, "article":
                             formatted_article.split("© 2019 Entercom Communications Corp. All rights reserved.")[0]})
