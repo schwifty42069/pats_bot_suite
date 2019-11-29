@@ -252,9 +252,14 @@ class ArticleScraper(object):
         article = ""
         title = self.bsoup.find("h1", {"class": "header__primary"}).text
         author = self.bsoup.find("a", {"class": "author__name"}).text
-        article_time = self.bsoup.find("div", {"class": "item__date--created heading field field-name-extra-date-"
-                                                        "created field-type-extra-date-created field-label-hidden"}) \
-            .text.split("\r\n                        ")[1].split("                    ")[0]
+        try:
+            article_time = self.bsoup.find("div", {"class": "item__date--created heading field field-name-extra-date-"
+                                                            "created field-type-extra-date-created field-label-hidden"}) \
+                .text.split("\r\n                        ")[1].split("                    ")[0]
+        except IndexError:
+            article_time = self.bsoup.find("div", {"class": "item__date--created heading field field-name-extra-date-"
+                                           "created field-type-extra-date-created field-label-hidden"}) \
+                .text.split("                    ")[1].strip("     ")
         author = "{} on {}".format(author, article_time)
         for p in self.bsoup.findAll("p"):
             if "93.7" not in p.text and "Related:" not in p.text and "RADIO.COM Sports" not in p.text:
