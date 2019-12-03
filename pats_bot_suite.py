@@ -81,7 +81,7 @@ class PatsBotSuite(Thread):
                         scraper.scrape_article()
                         self.build_successful_reply(scraper.content, submission)
                 if "post-game thread" in submission.title.lower():
-                    pgs = PostGameStatScraper()
+                    pgs = PostGameStatScraper("patriots")
                     submission.reply(pgs.build_pg_reply())
 
         # felt like this was simple enough to just run in an if/else block
@@ -313,8 +313,7 @@ class ArticleScraper(object):
 
 
 class PostGameStatScraper(object):
-    def __init__(self):
-        self.website = "https://www.nfl.com/scores"
+    def __init__(self, team):
         self.sp_header = "\n| Team | Quarter | Type | Description |\n|:--:|:--:|:--:|:--|"
         self.sbq_header = "\n| Team | Q1 | Q2 | Q3 | Q4 | Total |\n|:--:|:--:|:--:|:--:|:--:|:--:|"
         self.box_header = "\n| Team | Penalties | Rushing Yards | Net Passing Yards | Scrim. Yards |" \
@@ -325,19 +324,22 @@ class PostGameStatScraper(object):
         self.pgs = "\n***\n^I ^am ^the ^post-game ^stats ^bot, ^part ^of ^the ^r/patriots ^utility ^bot! ^Click " \
                    "^[here](https://www.reddit.com/message/compose/?to=apt-get-schwifty) ^to ^message " \
                    "^my ^creator!"
+
+        self.team = team
+        self.root_url = "https://www.nfl.com/scores"
         self.game_json = self.get_game_json()
 
     # These methods basically parse raw json out of the html of the page, kind of hacky
     def get_recap_link(self):
         json_data = {}
-        req = requests.get(self.website)
+        req = requests.get(self.root_url)
         bsoup = Soup(req.text, 'html.parser')
         for s in bsoup.findAll("script"):
             if "__INITIAL_DATA__" in s.text:
                 json_data = json.loads(s.text.split("__INITIAL_DATA__ = ")[1].split(";\n")[0])
         # Could modify this to fetch this data for any given team
         for game in json_data['uiState']['scoreStripGames']:
-            if not game['status']['isUpcoming'] and "patriots" in game['status']['gameLink']:
+            if not game['status']['isUpcoming'] and self.team.lower() in game['status']['gameLink']:
                 return "https://www.nfl.com" + game['status']['gameLink']
 
     def get_game_json(self):
@@ -371,7 +373,7 @@ class PostGameStatScraper(object):
         h_final_pts = []
         team_list = []
         pts_total = []
-        team_key_list = ['vistorTeam', 'homeTeam']
+        team_key_list = ['visitorTeam', 'homeTeam']
         vp = ['visitorPointsQ1', 'visitorPointsQ2', 'visitorPointsQ3', 'visitorPointsQ4']
         hp = ['homePointsQ1', 'homePointsQ2', 'homePointsQ3', 'homePointsQ4']
         totals_key_list = ['visitorPointsTotal', 'homePointsTotal']
@@ -383,30 +385,36 @@ class PostGameStatScraper(object):
             h_final_pts.append(self.game_json['instance']['gameDetails'][q])
         for total in totals_key_list:
             pts_total.append(self.game_json['instance']['gameDetails'][total])
-        self.format_score_by_quarter(team_key_list[0], vp[0], vp[1], vp[2], vp[3], pts_total[0])
-        self.format_score_by_quarter(team_key_list[1], hp[0], hp[1], hp[2], hp[3], pts_total[1])
+        self.format_score_by_quarter(team_list[0], v_final_pts[0], v_final_pts[1], v_final_pts[2], v_final_pts[3],
+                                     pts_total[0])
+        self.format_score_by_quarter(team_list[1], h_final_pts[0], h_final_pts[1], h_final_pts[2], h_final_pts[3],
+                                     pts_total[1])
         return
 
     # this is absolutely horrendous, but it works
     def fetch_box(self):
         keys = ['awayTeamStats', 'homeTeamStats']
         for key in keys:
-            team = self.game_json['instance']['teamStats'][key][0]['team']['abbreviation']
-            pens = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['penaltiesTotal']
-            rush_yds = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['rushingYards']
-            pass_yds = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['passingNetYards']
-            scrm_yds = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['scrimmageYds']
-            top = "{}:{}".format(int(str(float(self.game_json['instance']['teamStats'][key][0]['teamGameStats']
-                                               ['timeOfPossSeconds']) / 60).split(".")[0]),
-                                 str(float(str(float(self.game_json['instance']['teamStats']['awayTeamStats'][0]
-                                                     ['teamGameStats']['timeOfPossSeconds']) / 60)[:4]
-                                           .split(".")[1]) * 6).split(".")[0])
-            turnovers = "{}".format(int(self.game_json['instance']['teamStats'][key][0]
-                                        ['teamGameStats']['passingInterceptions'])
-                                    + int(self.game_json['instance']['teamStats'][key][0]
-                                          ['teamGameStats']['fumblesLost']))
-            self.format_box(team, pens, rush_yds, pass_yds, scrm_yds, top, turnovers)
-            return
+            try:
+                team = self.game_json['instance']['teamStats'][key][0]['team']['abbreviation']
+                pens = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['penaltiesTotal']
+                rush_yds = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['rushingYards']
+                pass_yds = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['passingNetYards']
+                scrm_yds = self.game_json['instance']['teamStats'][key][0]['teamGameStats']['scrimmageYds']
+                top = "{}:{}".format(int(str(float(self.game_json['instance']['teamStats'][key][0]['teamGameStats']
+                                                   ['timeOfPossSeconds']) / 60).split(".")[0]),
+                                     str(float(str(float(self.game_json['instance']['teamStats']['awayTeamStats'][0]
+                                                         ['teamGameStats']['timeOfPossSeconds']) / 60)[:4]
+                                               .split(".")[1]) * 6).split(".")[0])
+                turnovers = "{}".format(int(self.game_json['instance']['teamStats'][key][0]
+                                            ['teamGameStats']['passingInterceptions'])
+                                        + int(self.game_json['instance']['teamStats'][key][0]
+                                              ['teamGameStats']['fumblesLost']))
+                self.format_box(team, pens, rush_yds, pass_yds, scrm_yds, top, turnovers)
+            except IndexError:
+                print("\nNo json data for box-stats yet...\n")
+                continue
+        return
 
     def get_title_info(self):
         date = ""
@@ -415,8 +423,8 @@ class PostGameStatScraper(object):
                                              self.game_json['instance']['game']['homeTeam']['fullName'])
         jd = json.loads(requests.get("https://feeds.nfl.com/feeds-rs/scores.json").text)
         for g in jd['gameScores']:
-            if g['gameSchedule']['homeTeam']['fullName'] == "New England Patriots" or \
-                    g['gameSchedule']['visitorTeam']['fullName'] == 'New England Patriots':
+            if g['gameSchedule']['homeTeam']['nick'] .lower() == self.team or \
+                    g['gameSchedule']['visitorTeam']['nick'].lower() == self.team:
                 date = g['gameSchedule']['gameDate']
                 game_time = g['gameSchedule']['gameTimeEastern']
         start_date = "{} {} Eastern".format(date, game_time)
@@ -438,18 +446,17 @@ class PostGameStatScraper(object):
         self.fetch_scoring_plays()
         self.fetch_box()
         reply += "\n{}\n".format(self.get_title_info())
-        reply += "\n\n**Score by Quarter**\n"
+        reply += "\n**Score by Quarter**\n"
         reply += self.sbq_header
         for s in self.score_by_quarter:
             reply += s
-        reply += "\n\n**Scoring Plays**\n"
+        reply += "\n**Scoring Plays**\n"
         reply += self.sp_header
         for s in self.scoring_plays:
             reply += s
-        reply += "\n\n**Box Stats**\n"
+        reply += "\n**Box Stats**\n"
         reply += self.box_header
         for s in self.box:
             reply += s
-        reply += self.pgs
         print(reply)
         return reply
