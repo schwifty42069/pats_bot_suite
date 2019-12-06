@@ -2,6 +2,7 @@ import json
 import time
 from threading import Thread
 import threading
+import prawcore.exceptions
 import requests
 from bs4 import BeautifulSoup as Soup
 from praw import *
@@ -72,52 +73,93 @@ class PatsBotSuite(Thread):
        attribute of the submission object."""
 
     def stream_subreddit(self):
-        if self.mode == "submissions":
-            print("\nStreaming submissions...\n")
-            for submission in self.reddit.subreddit(self.sub).stream.submissions(skip_existing=True):
-                for kw in self.article_kws:
-                    if kw in submission.url:
-                        scraper = ArticleScraper(submission.url)
-                        scraper.scrape_article()
-                        self.build_successful_reply(scraper.content, submission)
-                if "post-game thread" in submission.title.lower():
-                    pgs = PostGameStatScraper("patriots")
-                    submission.reply(pgs.build_pg_reply())
-
-        # felt like this was simple enough to just run in an if/else block
-        elif self.mode == "comments":
-            print("\nStreaming comments...\n")
-            for comment in self.reddit.subreddit(self.sub).stream.comments(skip_existing=True):
+        while True:
+            if self.mode == "submissions":
+                print("\nStreaming submissions...\n")
                 try:
-                    if "!slater" in comment.body.lower():
-                        print("\nSaying Awwww yeahhhh!\n")
-                        comment.reply("## Awwwwwwwww yeahhhhhhhhhhhh!\n{}\n".format(self.slater_footer))
-                    if "!jets" in comment.body.lower() and str(comment.author) != "PatsUtilityBot":
-                        print("\nSaying fuck the jets!\n")
-                        comment.reply("## Fuck the Jets!\n{}\n".format(self.ftj_footer))
-                    if "!refs" in comment.body.lower():
-                        print("\nSaying fuck the refs!\n")
-                        comment.reply("## Fuck the refs!\n{}\n".format(self.refs_footer))
-                    if "!boohoo" in comment.body.lower():
-                        print("\nSaying boohoo!\n")
-                        comment.reply("## Boohoo! My team wost to da Patwiots! D:\n{}\n".format(self.boohoo))
-                    if "!pgs" in comment.body.lower():
-                        print("\nParsing team from comment...\n")
-                        parsed_syntax = comment.body.lower().split("; ")
-                        for word in parsed_syntax:
-                            if ";" in word:
-                                pgs = PostGameStatScraper(word.strip(";"))
-                                reply = pgs.build_pg_reply()
-                                comment.reply(reply)
-                except praw.exceptions.APIException:
-                    print("\nHitting rate limiter...\n")
+                    for submission in self.reddit.subreddit(self.sub).stream.submissions(skip_existing=False):
+                        for kw in self.article_kws:
+                            if kw in submission.url and not self.article_summoned_replied(submission):
+                                scraper = ArticleScraper(submission.url)
+                                scraper.scrape_article()
+                                self.build_successful_reply(scraper.content, submission)
+                        if "post-game thread" in submission.title.lower() and not \
+                                self.article_summoned_replied(submission):
+                            pgs = PostGameStatScraper("patriots")
+                            reply = pgs.build_pg_reply()
+                            submission.reply(reply)
+                except prawcore.exceptions.RequestException as e:
+                    print("Exception occurred with details: \nOriginal exception: {}, Req args: {}, Req kwargs: {}"
+                          "Waiting to retry...\n".format(e.original_exception, e.request_args, e.request_kwargs))
                     time.sleep(10)
-                    continue
+
+            # felt like this was simple enough to just run in an if/else block
+            elif self.mode == "comments":
+                print("\nStreaming comments...\n")
+                try:
+                    for comment in self.reddit.subreddit(self.sub).stream.comments(skip_existing=False):
+                        try:
+                            if "!slater" in comment.body.lower() and not self.comment_summon_replied(comment):
+                                print("\nSaying Awwww yeahhhh!\n")
+                                comment.reply("## Awwwwwwwww yeahhhhhhhhhhhh!\n{}\n".format(self.slater_footer))
+                            if "!jets" in comment.body.lower() and not self.comment_summon_replied(comment):
+                                print("\nSaying fuck the jets!\n")
+                                comment.reply("## Fuck the Jets!\n{}\n".format(self.ftj_footer))
+                            if "!refs" in comment.body.lower() and not self.comment_summon_replied(comment):
+                                print("\nSaying fuck the refs!\n")
+                                comment.reply("## Fuck the refs!\n{}\n".format(self.refs_footer))
+                            if "!boohoo" in comment.body.lower() and not self.comment_summon_replied(comment):
+                                print("\nSaying boohoo!\n")
+                                comment.reply("## Boohoo! My team wost to da Patwiots! D:\n{}\n".format(self.boohoo))
+                            if "!pgs" in comment.body.lower() and not self.comment_summon_replied(comment):
+                                error_reply = "Unable to find post-game data or json data not yet available for the " \
+                                              "provided team name!\n\nSorry! ):"
+                                try:
+                                    print("\nParsing team from comment...\n")
+                                    parsed_syntax = comment.body.lower().split("; ")
+                                    print(parsed_syntax)
+                                    for word in parsed_syntax:
+                                        if ";" in word and "&#x200b;" not in word and "!pgs" not in word:
+                                            print(word.strip(";"))
+                                            pgs = PostGameStatScraper(word.strip(";"))
+                                            reply = pgs.build_pg_reply()
+                                            comment.reply(reply)
+                                        else:
+                                            continue
+                                except TypeError:
+                                    comment.reply(error_reply)
+                        except praw.exceptions.APIException:
+                            print("\nHitting rate limiter, waiting 10 seconds to retry...\n")
+                except prawcore.exceptions.RequestException:
+                    print("\nNetwork exception occurred, waiting 10 seconds to retry\n")
+                    time.sleep(10)
 
     """The content arg that is passed to this method is a dict containing the name of the site,
        (used to choose the correct reply footer) the title of the article, the author/time of the article, 
        and the formatted article itself (formatting is done with some hacky methods in the ArticleScraper class)
        The submission object is then used to send the formatted reply."""
+
+    @staticmethod
+    def article_summoned_replied(submission):
+        replied = False
+        for comment in submission.comments:
+            if comment.author == "PatsUtilityBot":
+                replied = True
+                break
+            else:
+                continue
+        return replied
+
+    @staticmethod
+    def comment_summon_replied(comment):
+        replied = False
+        for r in comment.replies:
+            if r.author == "PatsUtilityBot":
+                replied = True
+                break
+            else:
+                continue
+        return replied
 
     def build_successful_reply(self, content, submission):
         if content['site'] == "nesn":
@@ -458,11 +500,11 @@ class PostGameStatScraper(object):
         reply += self.sbq_header
         for s in self.score_by_quarter:
             reply += s
-        reply += "\n**Scoring Plays**\n"
+        reply += "\n\n**Scoring Plays**\n"
         reply += self.sp_header
         for s in self.scoring_plays:
             reply += s
-        reply += "\n**Box Stats**\n"
+        reply += "\n\n**Box Stats**\n"
         reply += self.box_header
         for s in self.box:
             reply += s
